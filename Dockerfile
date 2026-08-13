@@ -1,4 +1,17 @@
-FROM php:8.5-alpine3.22 AS base
+FROM golang:1.26.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS roadrunner-builder
+
+ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9e41979 \
+    https://github.com/roadrunner-server/roadrunner/archive/refs/tags/v2025.1.15.tar.gz \
+    /tmp/roadrunner.tar.gz
+RUN mkdir -p /src /out && tar -xzf /tmp/roadrunner.tar.gz --strip-components=1 -C /src
+WORKDIR /src
+RUN go get golang.org/x/text@v0.39.0 google.golang.org/grpc@v1.82.1 && \
+    go mod tidy && \
+    CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
+
+FROM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS composer
+
+FROM php:8.5-alpine3.22@sha256:d4db4138a7adb7cb7b0152b5e12b121c473ea37195170a4c498058fd3b16e480 AS base
 
 ARG SHLINK_VERSION=latest
 ENV SHLINK_VERSION=${SHLINK_VERSION}
@@ -9,12 +22,14 @@ ENV USER_ID='1001'
 ENV PDO_SQLSRV_VERSION='5.13.0'
 ENV MS_ODBC_DOWNLOAD='fae28b9a-d880-42fd-9b98-d779f0fdd77f'
 ENV MS_ODBC_SQL_VERSION='18_18.5.1.1'
+ENV MS_ODBC_SQL_SHA256='d7844123af31489d4fae825003d817ff17e920e27e986248850ff30325a7e1c7'
 ENV LC_ALL='C'
 
 WORKDIR /etc/shlink
 
 # Install required PHP extensions
 RUN \
+    apk upgrade --no-cache && \
     # Temp install dev dependencies needed to compile the extensions \
     apk add --no-cache --virtual .dev-deps sqlite-dev postgresql-dev icu-dev libzip-dev zlib-dev linux-headers && \
     docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_pgsql intl calendar sockets bcmath zip && \
@@ -28,7 +43,8 @@ RUN \
 RUN if [ $(uname -m) == "x86_64" ]; then \
       apk add --no-cache --virtual .phpize-deps ${PHPIZE_DEPS} unixodbc-dev && \
       wget https://download.microsoft.com/download/${MS_ODBC_DOWNLOAD}/msodbcsql${MS_ODBC_SQL_VERSION}-1_amd64.apk && \
-      apk add --allow-untrusted msodbcsql${MS_ODBC_SQL_VERSION}-1_amd64.apk && \
+      echo "${MS_ODBC_SQL_SHA256}  msodbcsql${MS_ODBC_SQL_VERSION}-1_amd64.apk" | sha256sum -c - && \
+      apk add --no-cache --allow-untrusted msodbcsql${MS_ODBC_SQL_VERSION}-1_amd64.apk && \
       pecl install pdo_sqlsrv-${PDO_SQLSRV_VERSION} && \
       docker-php-ext-enable pdo_sqlsrv && \
       rm msodbcsql${MS_ODBC_SQL_VERSION}-1_amd64.apk && \
@@ -38,7 +54,7 @@ RUN if [ $(uname -m) == "x86_64" ]; then \
 # Install shlink
 FROM base AS builder
 COPY . .
-COPY --from=composer:2 /usr/bin/composer ./composer.phar
+COPY --from=composer /usr/bin/composer ./composer.phar
 RUN apk add --no-cache git && \
     php composer.phar install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction && \
     php composer.phar clear-cache && \
@@ -51,10 +67,8 @@ FROM base
 LABEL maintainer="Alejandro Celaya <alejandro@alejandrocelaya.com>"
 
 COPY --from=builder --chown=${USER_ID} /etc/shlink .
-RUN ln -s /etc/shlink/bin/cli /usr/local/bin/shlink && \
-    if [ "$SHLINK_RUNTIME" == 'rr' ]; then \
-      php ./vendor/bin/rr get --no-interaction --no-config --location bin/ && chmod +x bin/rr ; \
-    fi;
+COPY --from=roadrunner-builder --chown=${USER_ID} /out/rr bin/rr
+RUN ln -s /etc/shlink/bin/cli /usr/local/bin/shlink && chmod +x bin/rr
 
 # Expose default port
 EXPOSE 8080

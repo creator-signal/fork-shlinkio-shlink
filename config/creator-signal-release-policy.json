@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "productionReady": true,
+  "releaseBranch": "creator-signal/main",
+  "tagPrefix": "creator-signal-v",
+  "image": "ghcr.io/creator-signal/shlink",
+  "releaseVersion": "5.2.0-cs.1",
+  "requiredEvidence": [
+    "composer-lock",
+    "coding-standards",
+    "static-analysis",
+    "openapi-contract",
+    "unit-cli-api-database-tests",
+    "management-key-redaction",
+    "multi-architecture-build",
+    "filesystem-and-image-scan",
+    "sbom",
+    "oidc-provenance",
+    "immutable-image-digest"
+  ]
+}

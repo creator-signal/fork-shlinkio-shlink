@@ -146,7 +146,7 @@ enum EnvVars: string
             self::DISABLE_REFERRER_TRACKING,
             self::DISABLE_UA_TRACKING,
                 => false,
-            self::CORS_ALLOW_ORIGIN => '*',
+            self::CORS_ALLOW_ORIGIN => '',
             self::CORS_ALLOW_CREDENTIALS => false,
             self::CORS_MAX_AGE => 3600,
             self::LOGS_FORMAT => 'console',

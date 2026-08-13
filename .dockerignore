@@ -13,7 +13,6 @@ data/shlink-tests.db
 CHANGELOG.md
 CONTRIBUTING.md
 UPGRADE.md
-composer.lock
 vendor
 docs
 indocker
