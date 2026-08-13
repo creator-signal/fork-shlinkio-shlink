@@ -45,6 +45,8 @@ Creator Signal tags are namespaced (`creator-signal-vX.Y.Z-cs.N`). The release w
 
 The production Dockerfile pins its PHP, Composer and Go builder image indexes. RoadRunner `v2025.1.15` is rebuilt from its checksummed upstream source archive with Go `1.26.5`, `golang.org/x/text` `v0.39.0` and `google.golang.org/grpc` `v1.82.1`; this keeps the upstream runtime version while removing vulnerabilities present in its prebuilt binary. Do not return to `rr get` without a clean container scan.
 
+The lock currently retains `cuyz/valinor` `2.5.0`. Version `2.6.0` changed enum-validation paths so the public error field for `tagsMode` became the internal name `value`, breaking Shlink's API contract and upstream API tests. Remove this compatibility pin only after the mapped error again names the request field and the full API suite proves it on both supported PHP versions.
+
 The deployment tuple is:
 
 ```text
