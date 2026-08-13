@@ -41,7 +41,7 @@ Only the provider initializer and web BFF mount this file. The browser, Shlink s
 
 `config/creator-signal-compatibility.json` declares the supported REST major, paired web-client minimum and required operation IDs. `bin/creator-signal-verify-contract.sh` checks those operations against the generated OpenAPI document and rejects query authentication or a changed header scheme.
 
-Creator Signal tags are namespaced (`creator-signal-vX.Y.Z-cs.N`). The release workflow verifies the tag is the exact `creator-signal/main` revision, reruns CI, builds/scans amd64 and arm64, publishes `ghcr.io/creator-signal/shlink`, emits an OpenAPI artifact, SBOM, scan report, digest manifest and GitHub OIDC provenance, and only then creates the GitHub release. There is no `latest` tag.
+Creator Signal tags are namespaced (`creator-signal-vX.Y.Z-cs.N`). The release workflow verifies the tag is the exact `creator-signal/main` revision, refuses an already-existing GHCR version, reruns CI, builds/scans amd64 and arm64, publishes `ghcr.io/creator-signal/shlink` with semantic-version, namespaced-version and source-SHA tags, emits an OpenAPI artifact, SBOM, scan report, digest manifest and GitHub OIDC provenance, and only then creates the GitHub release. There is no `latest` tag.
 
 The production Dockerfile pins its PHP, Composer and Go builder image indexes. RoadRunner `v2025.1.15` is rebuilt from its checksummed upstream source archive with Go `1.26.5`, `golang.org/x/text` `v0.39.0` and `google.golang.org/grpc` `v1.82.1`; this keeps the upstream runtime version while removing vulnerabilities present in its prebuilt binary. Do not return to `rr get` without a clean container scan.
 
