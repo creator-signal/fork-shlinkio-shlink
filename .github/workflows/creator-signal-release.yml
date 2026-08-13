@@ -1,0 +1,196 @@
+name: Creator Signal release
+
+on:
+  push:
+    tags:
+      - creator-signal-v*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: creator-signal-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Verify governed release source
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+      image: ${{ steps.verify.outputs.image }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Verify policy, tag and exact main revision
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin creator-signal/main
+          test "${GITHUB_SHA}" = "$(git rev-parse origin/creator-signal/main)"
+          jq -e '.productionReady == true' config/creator-signal-release-policy.json >/dev/null
+          version="${GITHUB_REF_NAME#creator-signal-v}"
+          expected_version="$(jq -r '.releaseVersion' config/creator-signal-release-policy.json)"
+          test "${version}" = "${expected_version}"
+          test "$(jq -r '.creatorSignalRelease' config/creator-signal-compatibility.json)" = "${version}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+          echo "image=$(jq -r '.image' config/creator-signal-release-policy.json)" >> "${GITHUB_OUTPUT}"
+
+  quality-gates:
+    name: Rerun release quality gates
+    needs: preflight
+    uses: ./.github/workflows/creator-signal-ci.yml
+
+  package:
+    name: Dist and OpenAPI artifacts
+    needs: [preflight, quality-gates]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: ./.github/actions/ci-setup
+        with:
+          php-version: '8.5'
+          extensions-cache-key: creator-signal-release-8.5
+      - name: Build locked distribution
+        run: ./build.sh '${{ needs.preflight.outputs.version }}'
+      - name: Build and verify OpenAPI artifact
+        run: |
+          composer openapi:inline
+          bash bin/creator-signal-verify-contract.sh
+          cp docs/swagger/openapi-inlined.json "build/shlink-${{ needs.preflight.outputs.version }}-openapi.json"
+          cp config/creator-signal-compatibility.json "build/shlink-${{ needs.preflight.outputs.version }}-compatibility.json"
+          cd build
+          sha256sum shlink* > "shlink-${{ needs.preflight.outputs.version }}-package-checksums.txt"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: creator-signal-release-package
+          path: build/shlink*
+          if-no-files-found: error
+
+  image:
+    name: Publish immutable multi-arch image
+    needs: [preflight, quality-gates]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.publish.outputs.digest }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Authenticate to GHCR with the scoped GitHub token
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build local amd64 candidate
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: creator-signal/shlink:release-candidate
+          build-args: SHLINK_VERSION=${{ needs.preflight.outputs.version }}
+          cache-from: type=gha,scope=creator-signal-shlink-release
+          cache-to: type=gha,mode=max,scope=creator-signal-shlink-release
+      - name: Block vulnerable release candidate
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: creator-signal/shlink:release-candidate
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+      - name: Publish amd64 and arm64 with registry SBOM and provenance
+        id: publish
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ needs.preflight.outputs.image }}:${{ needs.preflight.outputs.version }}
+            ${{ needs.preflight.outputs.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.preflight.outputs.version }}
+          build-args: SHLINK_VERSION=${{ needs.preflight.outputs.version }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=creator-signal-shlink-release
+      - name: Prepare release evidence directory
+        shell: bash
+        run: mkdir -p build
+      - name: Scan published digest and retain JSON evidence
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: ${{ needs.preflight.outputs.image }}@${{ steps.publish.outputs.digest }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: json
+          output: build/shlink-${{ needs.preflight.outputs.version }}-trivy.json
+      - name: Generate release SBOM asset
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ needs.preflight.outputs.image }}@${{ steps.publish.outputs.digest }}
+          format: spdx-json
+          output-file: build/shlink-${{ needs.preflight.outputs.version }}-sbom.spdx.json
+          upload-artifact: false
+      - name: Publish GitHub OIDC build provenance
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-name: ${{ needs.preflight.outputs.image }}
+          subject-digest: ${{ steps.publish.outputs.digest }}
+          push-to-registry: true
+      - name: Record immutable image tuple
+        shell: bash
+        run: |
+          mkdir -p build
+          jq -n \
+            --arg image '${{ needs.preflight.outputs.image }}' \
+            --arg digest '${{ steps.publish.outputs.digest }}' \
+            --arg sourceRevision '${{ github.sha }}' \
+            --arg version '${{ needs.preflight.outputs.version }}' \
+            '{image: $image, digest: $digest, sourceRevision: $sourceRevision, version: $version, restApiMajor: 3}' \
+            > "build/shlink-${{ needs.preflight.outputs.version }}-image.json"
+          cd build
+          sha256sum shlink* > "shlink-${{ needs.preflight.outputs.version }}-image-checksums.txt"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: creator-signal-release-image
+          path: build/shlink*
+          if-no-files-found: error
+
+  github-release:
+    name: Create GitHub release after publication
+    needs: [preflight, package, image]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: creator-signal-release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Create immutable release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: >-
+          gh release create '${{ github.ref_name }}'
+          release-assets/*
+          --repo '${{ github.repository }}'
+          --verify-tag
+          --title 'Creator Signal Shlink ${{ needs.preflight.outputs.version }}'
+          --generate-notes

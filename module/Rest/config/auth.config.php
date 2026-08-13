@@ -13,9 +13,8 @@ return [
             ConfigProvider::UNVERSIONED_HEALTH_ENDPOINT_NAME,
         ],
 
-        'routes_with_query_api_key' => [
-            Action\ShortUrl\SingleStepCreateShortUrlAction::class,
-        ],
+        // Creator Signal hardening: API keys are accepted from X-Api-Key only. Query strings are access-logged.
+        'routes_with_query_api_key' => [],
     ],
 
     'dependencies' => [

@@ -25,7 +25,7 @@ class CorsTest extends ApiTestCase
     }
 
     #[Test, DataProvider('provideOrigins')]
-    public function responseIncludesCorsHeadersIfOriginIsSent(
+    public function responseDoesNotIncludeCorsHeadersIfOriginIsSentByDefault(
         string $origin,
         string $endpoint,
         int $expectedStatusCode,
@@ -35,7 +35,7 @@ class CorsTest extends ApiTestCase
         ]);
 
         self::assertEquals($expectedStatusCode, $resp->getStatusCode());
-        self::assertEquals('*', $resp->getHeaderLine('Access-Control-Allow-Origin'));
+        self::assertFalse($resp->hasHeader('Access-Control-Allow-Origin'));
         self::assertFalse($resp->hasHeader('Access-Control-Allow-Methods'));
         self::assertFalse($resp->hasHeader('Access-Control-Max-Age'));
         self::assertFalse($resp->hasHeader('Access-Control-Allow-Headers'));
@@ -61,7 +61,7 @@ class CorsTest extends ApiTestCase
         ]);
 
         self::assertEquals(204, $resp->getStatusCode());
-        self::assertTrue($resp->hasHeader('Access-Control-Allow-Origin'));
+        self::assertFalse($resp->hasHeader('Access-Control-Allow-Origin'));
         self::assertTrue($resp->hasHeader('Access-Control-Max-Age'));
         self::assertEquals($expectedAllowedMethods, $resp->getHeaderLine('Access-Control-Allow-Methods'));
         self::assertEquals($allowedHeaders, $resp->getHeaderLine('Access-Control-Allow-Headers'));

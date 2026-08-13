@@ -1,5 +1,9 @@
 ![Shlink](https://raw.githubusercontent.com/shlinkio/shlink.io/main/public/images/shlink-hero.png)
 
+> **Creator Signal fork:** integration lives on `creator-signal/develop`, releases come only from
+> `creator-signal/main`, and immutable images are published as `ghcr.io/creator-signal/shlink`.
+> See [the fork, security, compatibility and release contract](docs/creator-signal-fork.md).
+
 [![Build Status](https://img.shields.io/github/actions/workflow/status/shlinkio/shlink/ci.yml?branch=develop&logo=github&style=flat-square)](https://github.com/shlinkio/shlink/actions/workflows/ci.yml?query=workflow%3A%22Continuous+integration%22)
 [![Code Coverage](https://img.shields.io/codecov/c/gh/shlinkio/shlink/develop?style=flat-square)](https://app.codecov.io/gh/shlinkio/shlink)
 [![Latest Stable Version](https://img.shields.io/github/release/shlinkio/shlink.svg?style=flat-square)](https://packagist.org/packages/shlinkio/shlink)

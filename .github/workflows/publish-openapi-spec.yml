@@ -7,15 +7,16 @@ on:
 
 jobs:
   build:
+    if: github.repository == 'shlinkio/shlink'
     runs-on: ubuntu-24.04
     strategy:
       matrix:
         php-version: ['8.4']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Determine version
         id: determine_version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "${GITHUB_OUTPUT}"
         shell: bash
       - uses: './.github/actions/ci-setup'
         with:
@@ -25,7 +26,7 @@ jobs:
       - run: mkdir ${{ steps.determine_version.outputs.version }}
       - run: mv docs/swagger/openapi-inlined.json ${{ steps.determine_version.outputs.version }}/open-api-spec.json
       - name: Publish spec
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
         with:
           token: ${{ secrets.OAS_PUBLISH_TOKEN }}
           repository-name: 'shlinkio/shlink-open-api-specs'

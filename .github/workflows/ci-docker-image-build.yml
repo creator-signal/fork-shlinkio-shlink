@@ -7,6 +7,6 @@ on:
 
 jobs:
   build-docker-image:
-    uses: shlinkio/github-actions/.github/workflows/docker-image-build-ci.yml@main
+    uses: shlinkio/github-actions/.github/workflows/docker-image-build-ci.yml@e5a1b208a4d00252153bcf037178b4174b198902
     with:
       platforms: 'linux/arm64/v8,linux/amd64'
