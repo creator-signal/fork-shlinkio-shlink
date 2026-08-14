@@ -17,7 +17,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # rr get-binary picks this env automatically
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Start postgres database server
         if: ${{ inputs.test-group == 'api' }}
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d shlink_db_postgres
@@ -32,7 +32,7 @@ jobs:
         if: ${{ inputs.test-group == 'api' }}
         run: ./vendor/bin/rr get --no-interaction --no-config --location bin/ && chmod +x bin/rr
       - run: composer test:${{ inputs.test-group }}:ci
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ matrix.php-version == '8.4' }}
         with:
           name: coverage-${{ inputs.test-group }}

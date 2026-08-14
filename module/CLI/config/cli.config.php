@@ -28,6 +28,7 @@ return [
             Command\Api\DeleteKeyCommand::NAME => Command\Api\DeleteKeyCommand::class,
             Command\Api\ListKeysCommand::NAME => Command\Api\ListKeysCommand::class,
             Command\Api\InitialApiKeyCommand::NAME => Command\Api\InitialApiKeyCommand::class,
+            Command\Api\ProvisionKeyFileCommand::NAME => Command\Api\ProvisionKeyFileCommand::class,
             Command\Api\RenameApiKeyCommand::NAME => Command\Api\RenameApiKeyCommand::class,
 
             Command\Tag\ListTagsCommand::NAME => Command\Tag\ListTagsCommand::class,

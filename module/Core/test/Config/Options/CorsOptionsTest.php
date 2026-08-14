@@ -15,6 +15,7 @@ use Shlinkio\Shlink\Core\Config\Options\CorsOptions;
 class CorsOptionsTest extends TestCase
 {
     #[Test]
+    #[TestWith(['', [], ''])]
     #[TestWith(['*', '*', '*'])]
     #[TestWith(['<origin>', '<origin>', 'https://example.com'])]
     #[TestWith(['foo,bar, baz ', ['foo', 'bar', 'baz'], ''])]
