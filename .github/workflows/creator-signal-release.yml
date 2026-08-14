@@ -90,6 +90,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Refuse to overwrite an existing version
+        shell: bash
+        run: |
+          if docker buildx imagetools inspect '${{ needs.preflight.outputs.image }}:${{ needs.preflight.outputs.version }}' >/dev/null 2>&1; then
+            echo 'The release image version already exists and will not be overwritten.' >&2
+            exit 1
+          fi
       - name: Build local amd64 candidate
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
@@ -118,6 +125,7 @@ jobs:
           push: true
           tags: |
             ${{ needs.preflight.outputs.image }}:${{ needs.preflight.outputs.version }}
+            ${{ needs.preflight.outputs.image }}:creator-signal-v${{ needs.preflight.outputs.version }}
             ${{ needs.preflight.outputs.image }}:sha-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
