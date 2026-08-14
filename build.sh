@@ -27,8 +27,7 @@ rsync -av * "${builtContent}" \
 cd "${builtContent}"
 
 # Install dependencies
-echo "Installing dependencies with $composerBin..."
-${composerBin} self-update
+echo "Installing locked dependencies with ${composerBin}..."
 ${composerBin} install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction
 
 # Delete development files

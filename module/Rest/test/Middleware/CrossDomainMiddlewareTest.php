@@ -43,17 +43,16 @@ class CrossDomainMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function anyRequestIncludesTheAllowAccessHeader(): void
+    public function crossDomainRequestsAreDeniedByDefault(): void
     {
         $originalResponse = new Response();
         $this->handler->expects($this->once())->method('handle')->willReturn($originalResponse);
 
         $response = $this->middleware()->process(new ServerRequest()->withHeader('Origin', 'local'), $this->handler);
-        self::assertNotSame($originalResponse, $response);
-
         $headers = $response->getHeaders();
 
-        self::assertEquals('*', $response->getHeaderLine('Access-Control-Allow-Origin'));
+        self::assertSame($originalResponse, $response);
+        self::assertArrayNotHasKey('Access-Control-Allow-Origin', $headers);
         self::assertArrayNotHasKey('Access-Control-Allow-Methods', $headers);
         self::assertArrayNotHasKey('Access-Control-Max-Age', $headers);
         self::assertArrayNotHasKey('Access-Control-Allow-Headers', $headers);
@@ -74,7 +73,7 @@ class CrossDomainMiddlewareTest extends TestCase
 
         $headers = $response->getHeaders();
 
-        self::assertEquals('*', $response->getHeaderLine('Access-Control-Allow-Origin'));
+        self::assertArrayNotHasKey('Access-Control-Allow-Origin', $headers);
         self::assertArrayHasKey('Access-Control-Allow-Methods', $headers);
         self::assertEquals('1000', $response->getHeaderLine('Access-Control-Max-Age'));
         self::assertEquals('foo, bar, baz', $response->getHeaderLine('Access-Control-Allow-Headers'));

@@ -31,7 +31,7 @@ class SingleStepCreateShortUrlTest extends ApiTestCase
     #[Test]
     public function authorizationErrorIsReturnedIfNoApiKeyIsSent(): void
     {
-        $expectedDetail = 'Expected authentication to be provided in "apiKey" query param';
+        $expectedDetail = 'Expected one of the following authentication headers, ["X-Api-Key"], but none were provided';
 
         $resp = $this->createShortUrl();
         $payload = $this->getJsonResponsePayload($resp);
@@ -47,9 +47,11 @@ class SingleStepCreateShortUrlTest extends ApiTestCase
     {
         $query = [
             'longUrl' => 'https://app.shlink.io',
-            'apiKey' => $apiKey,
             'format' => $format,
         ];
-        return $this->callApi(self::METHOD_GET, '/short-urls/shorten', [RequestOptions::QUERY => $query]);
+        return $this->callApi(self::METHOD_GET, '/short-urls/shorten', [
+            RequestOptions::QUERY => $query,
+            RequestOptions::HEADERS => $apiKey === null ? [] : ['X-Api-Key' => $apiKey],
+        ]);
     }
 }

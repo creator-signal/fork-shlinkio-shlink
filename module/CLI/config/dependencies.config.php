@@ -56,6 +56,7 @@ return [
             Command\Api\DeleteKeyCommand::class => ConfigAbstractFactory::class,
             Command\Api\ListKeysCommand::class => ConfigAbstractFactory::class,
             Command\Api\InitialApiKeyCommand::class => ConfigAbstractFactory::class,
+            Command\Api\ProvisionKeyFileCommand::class => ConfigAbstractFactory::class,
             Command\Api\RenameApiKeyCommand::class => ConfigAbstractFactory::class,
 
             Command\Tag\ListTagsCommand::class => ConfigAbstractFactory::class,
@@ -120,6 +121,7 @@ return [
         Command\Api\DeleteKeyCommand::class => [ApiKeyService::class],
         Command\Api\ListKeysCommand::class => [ApiKeyService::class],
         Command\Api\InitialApiKeyCommand::class => [ApiKeyService::class],
+        Command\Api\ProvisionKeyFileCommand::class => [ApiKeyService::class],
         Command\Api\RenameApiKeyCommand::class => [ApiKeyService::class],
 
         Command\Tag\ListTagsCommand::class => [TagService::class],
