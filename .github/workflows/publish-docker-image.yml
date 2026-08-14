@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-image:
+    if: github.repository == 'shlinkio/shlink'
     strategy:
       matrix:
         include:
@@ -15,7 +16,7 @@ jobs:
           - runtime: 'rr'
             tag-suffix: 'roadrunner'
             platforms: 'linux/arm64/v8,linux/amd64'
-    uses: shlinkio/github-actions/.github/workflows/docker-publish-image.yml@main
+    uses: shlinkio/github-actions/.github/workflows/docker-publish-image.yml@e5a1b208a4d00252153bcf037178b4174b198902
     secrets: inherit
     with:
       image-name: shlinkio/shlink

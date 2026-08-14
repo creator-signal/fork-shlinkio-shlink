@@ -12,15 +12,6 @@
                 "$ref": "../parameters/version.json"
             },
             {
-                "name": "apiKey",
-                "in": "query",
-                "description": "The API key used to authenticate the request",
-                "required": true,
-                "schema": {
-                    "type": "string"
-                }
-            },
-            {
                 "name": "longUrl",
                 "in": "query",
                 "description": "The URL to be shortened",
@@ -41,6 +32,11 @@
                         "json"
                     ]
                 }
+            }
+        ],
+        "security": [
+            {
+                "ApiKey": []
             }
         ],
         "responses": {

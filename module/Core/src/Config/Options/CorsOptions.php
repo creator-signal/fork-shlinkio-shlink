@@ -20,7 +20,7 @@ final readonly class CorsOptions
     public string|array $allowOrigins;
 
     public function __construct(
-        string $allowOrigins = '*',
+        string $allowOrigins = '',
         public bool $allowCredentials = false,
         public int $maxAge = 3600,
     ) {

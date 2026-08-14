@@ -1,0 +1,62 @@
+name: Creator Signal upstream sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: creator-signal-upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: creator-signal/develop
+          fetch-depth: 0
+      - name: Fetch branches without upstream tags
+        run: |
+          git remote add upstream https://github.com/shlinkio/shlink.git
+          git fetch --no-tags upstream develop main
+          git fetch --no-tags origin develop main creator-signal/develop
+      - name: Fast-forward exact mirror branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          for branch in develop main; do
+            git merge-base --is-ancestor "origin/${branch}" "upstream/${branch}"
+            git push origin "upstream/${branch}:refs/heads/${branch}"
+          done
+      - name: Open one governed integration pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh pr list --repo "${GITHUB_REPOSITORY}" --base creator-signal/develop --state open --json headRefName --jq '.[].headRefName' | grep -q '^automation/sync-upstream-'; then
+            echo 'An upstream sync pull request is already open.'
+            exit 0
+          fi
+          if git diff --quiet origin/creator-signal/develop..upstream/develop; then
+            echo 'Creator Signal develop already contains upstream develop.'
+            exit 0
+          fi
+          branch="automation/sync-upstream-${GITHUB_RUN_ID}"
+          git config user.name creator-signal-bot
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "${branch}" origin/creator-signal/develop
+          git merge --no-edit upstream/develop
+          git push origin "HEAD:refs/heads/${branch}"
+          gh pr create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base creator-signal/develop \
+            --head "${branch}" \
+            --title 'chore: sync upstream develop' \
+            --body 'Governed upstream sync. Mirror branches were fast-forwarded without tags; Creator Signal CI must pass before merge.'

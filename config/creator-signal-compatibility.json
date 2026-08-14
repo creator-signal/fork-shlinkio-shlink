@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schemaVersion": 1,
+  "creatorSignalRelease": "5.2.0-cs.1",
+  "upstreamLine": "shlinkio/shlink:develop",
+  "restApiMajor": 3,
+  "supportedServerVersions": ">=5.2.0-cs.1 <6.0.0",
+  "pairedWebClient": {
+    "repository": "creator-signal/fork-shlinkio-shlink-web-client",
+    "minimumCreatorSignalRelease": "4.8.1-cs.1",
+    "image": "ghcr.io/creator-signal/shlink-web-client"
+  },
+  "databaseContract": "Doctrine migrations embedded at the immutable server source revision",
+  "requiredOperationIds": [
+    "health",
+    "listShortUrls",
+    "createShortUrl",
+    "getShortUrl",
+    "editShortUrl",
+    "deleteShortUrl",
+    "getShortUrlVisits",
+    "deleteShortUrlVisits",
+    "listShortUrlRedirectRules",
+    "setShortUrlRedirectRules",
+    "getGlobalVisits",
+    "getOrphanVisits",
+    "getNonOrphanVisits",
+    "deleteOrphanVisits",
+    "listTags",
+    "renameTag",
+    "deleteTags",
+    "getTagVisits",
+    "tagsWithStats",
+    "listDomains",
+    "getDomainVisits",
+    "setDomainRedirects"
+  ]
+}

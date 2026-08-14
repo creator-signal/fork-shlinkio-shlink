@@ -28,9 +28,9 @@ jobs:
     strategy:
       matrix:
         php-version: ['8.4']
-        command: ['cs', 'stan', 'openapi:validate']
+        command: ['lint', 'format:check', 'analyze', 'openapi:validate']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: './.github/actions/ci-setup'
         with:
           php-version: ${{ matrix.php-version }}
@@ -71,13 +71,13 @@ jobs:
       matrix:
         php-version: ['8.4']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Use PHP
         uses: './.github/actions/ci-setup'
         with:
           php-version: ${{ matrix.php-version }}
           extensions-cache-key: tests-extensions-${{ matrix.php-version }}
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           path: build
       - run: mv build/coverage-unit/coverage-unit.cov build/coverage-unit.cov
@@ -86,7 +86,7 @@ jobs:
       - run: mv build/coverage-cli/coverage-cli.cov build/coverage-cli.cov
       - run: vendor/bin/phpcov merge build --clover build/clover.xml
       - name: Publish coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@a99c28d3f0da835de33ff2feb2e15691c7b9641f # v7
         with:
           files: ./build/clover.xml
 
@@ -95,7 +95,7 @@ jobs:
       - upload-coverage
     runs-on: ubuntu-24.04
     steps:
-      - uses: geekyeggo/delete-artifact@v6
+      - uses: geekyeggo/delete-artifact@142daa0f3a918e74a4c700b1ffb48887be395588 # v6
         with:
           name: |
             coverage-*
