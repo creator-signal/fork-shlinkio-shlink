@@ -5,7 +5,10 @@ ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9
     /tmp/roadrunner.tar.gz
 RUN mkdir -p /src /out && tar -xzf /tmp/roadrunner.tar.gz --strip-components=1 -C /src
 WORKDIR /src
-RUN go get golang.org/x/text@v0.39.0 google.golang.org/grpc@v1.82.1 && \
+RUN go get github.com/rabbitmq/amqp091-go@v1.13.0 \
+        golang.org/x/crypto@v0.55.0 \
+        golang.org/x/text@v0.39.0 \
+        google.golang.org/grpc@v1.83.1 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
 

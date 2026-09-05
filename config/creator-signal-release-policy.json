@@ -4,7 +4,7 @@
   "releaseBranch": "creator-signal/main",
   "tagPrefix": "creator-signal-v",
   "image": "ghcr.io/creator-signal/shlink",
-  "releaseVersion": "5.2.0-cs.1",
+  "releaseVersion": "5.2.0-cs.2",
   "requiredEvidence": [
     "composer-lock",
     "coding-standards",
