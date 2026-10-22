@@ -1,4 +1,4 @@
-FROM golang:1.26.6-alpine@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df AS roadrunner-builder
+FROM golang:1.26.10-alpine@sha256:5cb67f19c5e7994dcb80c074f7cfca8aeeada45bbdca035f73df269cefdcce61 AS roadrunner-builder
 
 ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9e41979 \
     https://github.com/roadrunner-server/roadrunner/archive/refs/tags/v2025.1.15.tar.gz \
@@ -6,15 +6,20 @@ ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9
 RUN mkdir -p /src /out && tar -xzf /tmp/roadrunner.tar.gz --strip-components=1 -C /src
 WORKDIR /src
 RUN go get github.com/rabbitmq/amqp091-go@v1.13.0 \
-        golang.org/x/crypto@v0.55.0 \
-        golang.org/x/text@v0.41.0 \
-        google.golang.org/grpc@v1.83.1 && \
+        github.com/klauspost/compress@v1.18.7 \
+        golang.org/x/crypto@v0.57.0 \
+        golang.org/x/net@v0.60.0 \
+        golang.org/x/text@v0.42.0 \
+        google.golang.org/grpc@v1.83.2 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
 
+FROM scratch AS roadrunner-artifact
+COPY --from=roadrunner-builder /out/rr /rr
+
 FROM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS composer
 
-FROM php:8.5-alpine3.22@sha256:d4db4138a7adb7cb7b0152b5e12b121c473ea37195170a4c498058fd3b16e480 AS base
+FROM php:8.5.12-cli-alpine3.23@sha256:307c3a4ece9b0dc24d4e5c1ad6229aab15354144b12f3afed209ed847c855697 AS base
 
 ARG SHLINK_VERSION=latest
 ENV SHLINK_VERSION=${SHLINK_VERSION}
@@ -79,6 +84,9 @@ EXPOSE 8080
 # Copy config specific for the image
 COPY docker/docker-entrypoint.sh docker-entrypoint.sh
 COPY docker/config/php.ini ${PHP_INI_DIR}/conf.d/
+
+# Fail both architecture builds if PHP regresses or required drivers disappear.
+RUN php -r 'if (PHP_VERSION_ID < 80512 || PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 5 || ini_get("session.upload_progress.enabled")) { throw new RuntimeException("Unsafe PHP runtime"); } foreach (["curl", "mbstring", "pdo_mysql", "pdo_pgsql", "pdo_sqlite", "intl", "calendar", "sockets", "bcmath", "zip"] as $extension) { if (!extension_loaded($extension)) { throw new RuntimeException("Missing extension: " . $extension); } } if (php_uname("m") === "x86_64" && !extension_loaded("pdo_sqlsrv")) { throw new RuntimeException("Missing SQL Server driver"); } echo "Verified PHP ", PHP_VERSION, " and required extensions", PHP_EOL;'
 
 USER ${USER_ID}
 
