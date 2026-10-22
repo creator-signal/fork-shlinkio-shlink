@@ -7,9 +7,9 @@ RUN mkdir -p /src /out && tar -xzf /tmp/roadrunner.tar.gz --strip-components=1 -
 WORKDIR /src
 RUN go get github.com/rabbitmq/amqp091-go@v1.13.0 \
         github.com/klauspost/compress@v1.18.7 \
-        golang.org/x/crypto@v0.55.0 \
+        golang.org/x/crypto@v0.57.0 \
         golang.org/x/net@v0.60.0 \
-        golang.org/x/text@v0.41.0 \
+        golang.org/x/text@v0.42.0 \
         google.golang.org/grpc@v1.83.2 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
