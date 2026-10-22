@@ -1,4 +1,4 @@
-FROM golang:1.26.6-alpine@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df AS roadrunner-builder
+FROM golang:1.26.10-alpine@sha256:5cb67f19c5e7994dcb80c074f7cfca8aeeada45bbdca035f73df269cefdcce61 AS roadrunner-builder
 
 ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9e41979 \
     https://github.com/roadrunner-server/roadrunner/archive/refs/tags/v2025.1.15.tar.gz \
@@ -6,9 +6,11 @@ ADD --checksum=sha256:32e0196ae551b6ad2abf50cbfc961f91e9dd4134bd177b0f7aa03dada9
 RUN mkdir -p /src /out && tar -xzf /tmp/roadrunner.tar.gz --strip-components=1 -C /src
 WORKDIR /src
 RUN go get github.com/rabbitmq/amqp091-go@v1.13.0 \
+        github.com/klauspost/compress@v1.18.7 \
         golang.org/x/crypto@v0.55.0 \
+        golang.org/x/net@v0.60.0 \
         golang.org/x/text@v0.41.0 \
-        google.golang.org/grpc@v1.83.1 && \
+        google.golang.org/grpc@v1.83.2 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
 
