@@ -4,8 +4,10 @@ This fork is the private REST/server half of Creator Signal's link-management st
 
 ## PHP security runtime (Issue #13)
 
-Release `5.2.0-cs.3` retains Shlink 5.2.0 and its locked application dependencies,
-and updates the pinned official runtime to PHP **8.5.12 CLI on Alpine 3.23**.
+Release `5.2.0-cs.3` retains Shlink 5.2.0 and updates the pinned official runtime
+to PHP **8.5.12 CLI on Alpine 3.23**. Its locked phpseclib, Symfony HTTP Foundation
+and YAML dependencies receive security patch updates; the Valinor compatibility
+pin remains unchanged.
 The official image index is
 `sha256:307c3a4ece9b0dc24d4e5c1ad6229aab15354144b12f3afed209ed847c855697`;
 its Linux amd64 and arm64 configurations both declare PHP 8.5.12. Alpine 3.22
@@ -21,6 +23,9 @@ both the patched engine and `session.upload_progress.enabled=0` before request
 parsing. Both architecture builds reject an older engine, enabled upload
 progress or missing required PHP extensions, including SQL Server on amd64.
 The existing container CI also executes the final runtime as UID 1001.
+API tests export only the pinned, source-built RoadRunner binary from the
+production Dockerfile's `roadrunner-artifact` target. They no longer rely on
+`rr get` finding an older 2025 release in the upstream release-list pagination.
 
 No REST, database schema, key, permission, identity, privacy, routing or storage
 contract changes. Retain the prior `5.2.0-cs.2` artifact for rollback; rollback

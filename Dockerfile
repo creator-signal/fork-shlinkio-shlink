@@ -12,6 +12,9 @@ RUN go get github.com/rabbitmq/amqp091-go@v1.13.0 \
     go mod tidy && \
     CGO_ENABLED=0 go build -trimpath -ldflags '-s -w -buildid=' -o /out/rr cmd/rr/main.go
 
+FROM scratch AS roadrunner-artifact
+COPY --from=roadrunner-builder /out/rr /rr
+
 FROM composer:2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 AS composer
 
 FROM php:8.5.12-cli-alpine3.23@sha256:307c3a4ece9b0dc24d4e5c1ad6229aab15354144b12f3afed209ed847c855697 AS base
