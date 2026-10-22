@@ -132,6 +132,10 @@ jobs:
           build-args: SHLINK_VERSION=ci-${{ github.sha }}
           cache-from: type=gha,scope=creator-signal-shlink
           cache-to: type=gha,mode=max,scope=creator-signal-shlink
+      - name: Verify final runtime as its unprivileged user
+        run: >-
+          docker run --rm --entrypoint php creator-signal/shlink:ci
+          -r 'if (PHP_VERSION_ID < 80512 || PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 5 || ini_get("session.upload_progress.enabled") || posix_geteuid() !== 1001) { exit(1); } echo "Verified PHP ", PHP_VERSION, " as UID ", posix_geteuid(), PHP_EOL;'
       - name: Scan built container
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
         with:

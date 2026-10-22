@@ -2,6 +2,36 @@
 
 This fork is the private REST/server half of Creator Signal's link-management stack. Human identity and authorization are deliberately not implemented in Shlink. The paired web client terminates ZITADEL Authorization Code + PKCE, requires `platform:operator`, stores an opaque HTTP-only session, and calls this service over a private route with a dedicated Shlink management key.
 
+## PHP security runtime (Issue #13)
+
+Release `5.2.0-cs.3` retains Shlink 5.2.0 and updates the pinned official runtime
+to PHP **8.5.12 CLI on Alpine 3.23**. Its locked phpseclib, Symfony HTTP Foundation
+and YAML dependencies receive security patch updates; the Valinor compatibility
+pin remains unchanged.
+The official image index is
+`sha256:307c3a4ece9b0dc24d4e5c1ad6229aab15354144b12f3afed209ed847c855697`;
+its Linux amd64 and arm64 configurations both declare PHP 8.5.12. Alpine 3.22
+does not provide this official PHP release, so the image moves to Alpine 3.23.
+The existing multi-architecture build, database, API and vulnerability gates must
+prove the updated runtime and rebuilt extensions before release.
+
+The [PHP security advisory of 21 October 2026](https://www.php.net/archive/2026.php#2026-10-21-5)
+requires PHP 8.5.12 to fix CVE-2026-109618 and CVE-2026-109619 on the 8.5 line.
+This is the newest stable PHP line; PHP 8.6 release candidates are excluded.
+Disabling upload progress alone is incomplete mitigation. The image includes
+both the patched engine and `session.upload_progress.enabled=0` before request
+parsing. Both architecture builds reject an older engine, enabled upload
+progress or missing required PHP extensions, including SQL Server on amd64.
+The existing container CI also executes the final runtime as UID 1001.
+API tests export only the pinned, source-built RoadRunner binary from the
+production Dockerfile's `roadrunner-artifact` target. They no longer rely on
+`rr get` finding an older 2025 release in the upstream release-list pagination.
+
+No REST, database schema, key, permission, identity, privacy, routing or storage
+contract changes. Retain the prior `5.2.0-cs.2` artifact for rollback; rollback
+to its unpatched runtime is not security acceptance. Fork CI/publication is
+separate from Sales Pulse digest adoption and authorized environment acceptance.
+
 ## Branches and upstream sync
 
 - `develop` and `main` are exact fast-forward mirrors of `shlinkio/shlink`; never add Creator Signal commits to them.
@@ -43,7 +73,7 @@ Only the provider initializer and web BFF mount this file. The browser, Shlink s
 
 Creator Signal tags are namespaced (`creator-signal-vX.Y.Z-cs.N`). The release workflow verifies the tag is the exact `creator-signal/main` revision, refuses an already-existing GHCR version, reruns CI, builds/scans amd64 and arm64, publishes `ghcr.io/creator-signal/shlink` with semantic-version, namespaced-version and source-SHA tags, emits an OpenAPI artifact, SBOM, scan report, digest manifest and GitHub OIDC provenance, and only then creates the GitHub release. There is no `latest` tag.
 
-The production Dockerfile pins its PHP, Composer and Go builder image indexes. RoadRunner `v2025.1.15` is rebuilt from its checksummed upstream source archive with Go `1.26.6` and explicit security floors for `github.com/rabbitmq/amqp091-go` `v1.13.0`, `golang.org/x/crypto` `v0.55.0`, `golang.org/x/text` `v0.41.0` and `google.golang.org/grpc` `v1.83.1`; this keeps the upstream runtime version while removing vulnerabilities present in its prebuilt binary and older transitive dependencies. Do not return to `rr get` or lower a Go dependency security floor without a clean container scan.
+The production Dockerfile pins its PHP, Composer and Go builder image indexes. RoadRunner `v2025.1.15` is rebuilt from its checksummed upstream source archive with Go `1.26.10` and explicit security floors for `github.com/rabbitmq/amqp091-go` `v1.13.0`, `golang.org/x/crypto` `v0.57.0`, `golang.org/x/text` `v0.42.0` and `google.golang.org/grpc` `v1.83.2`, `github.com/klauspost/compress` `v1.18.7` and `golang.org/x/net` `v0.60.0`; this keeps the upstream runtime version while removing vulnerabilities present in its prebuilt binary and older transitive dependencies. Do not return to `rr get` or lower a Go dependency security floor without a clean container scan.
 
 The lock currently retains `cuyz/valinor` `2.5.0`. Version `2.6.0` changed enum-validation paths so the public error field for `tagsMode` became the internal name `value`, breaking Shlink's API contract and upstream API tests. Remove this compatibility pin only after the mapped error again names the request field and the full API suite proves it on both supported PHP versions.
 

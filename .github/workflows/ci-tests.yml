@@ -28,9 +28,11 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           extensions-cache-key: tests-extensions-${{ matrix.php-version }}-${{ inputs.test-group }}
-      - name: Download RoadRunner binary
+      - name: Build the same pinned RoadRunner used by the production image
         if: ${{ inputs.test-group == 'api' }}
-        run: ./vendor/bin/rr get --no-interaction --no-config --location bin/ && chmod +x bin/rr
+        run: |
+          docker buildx build --target roadrunner-artifact --output type=local,dest=bin .
+          chmod +x bin/rr
       - run: composer test:${{ inputs.test-group }}:ci
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: ${{ matrix.php-version == '8.4' }}
